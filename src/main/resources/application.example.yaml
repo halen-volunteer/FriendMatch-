@@ -1,0 +1,78 @@
+spring.application.name: UserCenter
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: your_mysql_username
+    password: your_mysql_password
+    url: jdbc:mysql://localhost:3306/friendmatch?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      password: your_redis_password
+      database: 1
+      connect-timeout: 60s
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: 5s
+
+  mail:
+    host: smtp.qq.com
+    port: 587
+    protocol: smtp
+    username: your_email@qq.com
+    password: your_email_auth_code
+    default-encoding: utf-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+          timeout: 5000
+          starttls:
+            enable: true
+            required: true
+        debug: false
+
+  rabbitmq:
+    host: 127.0.0.1
+    port: 5672
+    username: guest
+    password: guest
+    virtual-host: /
+    connection-timeout: 10000
+    publisher-confirms: true
+    publisher-returns: true
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 1
+        concurrency: 1
+        max-concurrency: 10
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 1000
+          multiplier: 1.0
+          max-interval: 10000
+
+server:
+  port: 8081
+
+ai:
+  api-key: your_ai_api_key
+  base-url: https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
+  model: qwen-turbo
+  timeout-seconds: 15
+
+oss:
+  access-key-id: your_qiniu_access_key
+  access-key-secret: your_qiniu_secret_key
+  bucket-name: your_bucket_name
+  url-prefix: https://your-cdn-domain
+  upload-url: https://up-z2.qiniup.com
+  presign-expire-seconds: 300

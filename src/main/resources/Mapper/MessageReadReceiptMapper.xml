@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zero.usercenter.Mapper.MessageReadReceiptMapper">
+
+    <!--
+        批量插入消息回执，利用 INSERT IGNORE 跳过唯一索引冲突
+        唯一索引：uk_msg_user_type (msg_id, user_id, receipt_type)
+        避免 N+1 的 SELECT+INSERT，改为 1次SELECT查重 + 1次批量INSERT IGNORE
+    -->
+    <insert id="batchInsertIgnore">
+        INSERT IGNORE INTO t_message_read_receipt
+            (msg_id, user_id, receipt_type, receipt_time, is_delete)
+        VALUES
+        <foreach collection="msgIds" item="msgId" separator=",">
+            (#{msgId}, #{userId}, #{receiptType}, #{receiptTime}, 0)
+        </foreach>
+    </insert>
+
+</mapper>

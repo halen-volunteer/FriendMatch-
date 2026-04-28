@@ -1,0 +1,98 @@
+:root {
+  color-scheme: light;
+  font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+
+  --app-bg: #f5f5f5;
+  --app-bg-soft: #fafafa;
+  --panel-bg: #ffffff;
+  --panel-muted: #fafafa;
+  --panel-soft: #fcfcfc;
+  --sidebar-bg: #f0f0f0;
+  --sidebar-hover: #e0e0e0;
+  --sidebar-active: #e2e2e2;
+  --border-color: #ececec;
+  --border-soft: #efefef;
+  --text-color: #1f1f1f;
+  --text-secondary: #4a4a4a;
+  --text-muted: #8a8a8a;
+  --text-light: #9a9a9a;
+  --brand-primary: #409eff;
+  --brand-success: #07c160;
+  --brand-warning: #e6a23c;
+  --brand-danger: #f56c6c;
+  --brand-info: #909399;
+
+  --shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.06);
+  --shadow-panel: 0 24px 40px rgba(0, 0, 0, 0.12);
+
+  --radius-xl: 24px;
+  --radius-lg: 16px;
+  --radius-md: 14px;
+  --radius-sm: 12px;
+  --radius-xs: 10px;
+
+  --space-page: 20px;
+  --space-section: 20px;
+  --space-card: 16px;
+  --space-sm: 10px;
+  --space-xs: 6px;
+
+  --font-size-page-title: 28px;
+  --font-size-title: 20px;
+  --font-size-subtitle: 14px;
+  --font-size-body: 14px;
+  --font-size-caption: 12px;
+
+  --layout-side-nav-width: 72px;
+  --layout-side-nav-bg: #f0f0f0;
+  --layout-side-nav-border: #dddddd;
+  --layout-side-nav-padding-top: 18px;
+  --layout-side-nav-padding-bottom: 14px;
+  --layout-side-nav-avatar-size: 48px;
+  --layout-side-nav-item-size: 56px;
+  --layout-side-nav-icon-size: 22px;
+  --layout-side-nav-menu-left: 68px;
+  --layout-side-nav-submenu-left: 268px;
+  --layout-side-nav-menu-width: 190px;
+  --layout-side-nav-submenu-width: 180px;
+  --layout-side-nav-radius-sm: 12px;
+  --layout-side-nav-radius-lg: 22px;
+  --layout-side-nav-radius-xl: 28px;
+  --layout-side-nav-gap-xs: 4px;
+  --layout-side-nav-gap-sm: 10px;
+  --layout-side-nav-gap-sm2: 8px;
+  --layout-side-nav-gap-md: 16px;
+  --layout-side-nav-gap-lg: 18px;
+  --layout-side-nav-font-xs: 11px;
+  --layout-side-nav-font-sm: 12px;
+  --layout-side-nav-font-sm-plus: 12px;
+  --layout-side-nav-font-md: 13px;
+  --layout-side-nav-text-muted: #6e6e6e;
+  --layout-side-nav-text-main: #2d2d2d;
+  --layout-side-nav-text-light: #8d8d8d;
+  --layout-side-nav-text-subtle: #888888;
+  --layout-side-nav-hover-bg: #e0e0e0;
+  --layout-side-nav-active-bg: #e2e2e2;
+  --layout-side-nav-item-bg: #ffffff;
+  --layout-side-nav-item-primary-bg: #f4f4f4;
+  --layout-side-nav-item-hover-bg: #f1f1f1;
+  --layout-side-nav-panel-bg: rgba(255, 255, 255, 0.96);
+  --layout-side-nav-panel-border: rgba(240, 240, 240, 0.96);
+  --layout-side-nav-panel-shadow: 0 24px 40px rgba(0, 0, 0, 0.12);
+
+  --chat-action-btn-height: 34px;
+  --chat-action-btn-padding-x: 14px;
+  --chat-action-btn-radius: 10px;
+  --chat-action-btn-font: 13px;
+  --chat-action-btn-bg: #eaf3ff;
+  --chat-action-btn-border: #cfe3ff;
+  --chat-action-btn-text: #2d74da;
+  --chat-action-btn-hover-bg: #dcecff;
+
+  --quick-menu-width: 184px;
+  --quick-menu-padding: 10px;
+  --quick-menu-radius: 14px;
+  --quick-menu-item-padding: 10px 12px;
+  --quick-menu-item-font: 12px;
+  --quick-menu-item-gap: 8px;
+}
