@@ -31,3 +31,23 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Frontend ###
+VueFormatCode/node_modules/
+VueFormatCode/dist/
+VueFormatCode/md/
+VueFormatCode/ReadMD/
+VueFormatCode/.env
+VueFormatCode/.env.*
+!VueFormatCode/.env.example
+
+### Backend Sensitive Config ###
+src/main/resources/application.yaml
+src/main/resources/application.yml
+src/main/resources/application.properties
+!src/main/resources/application.example.yaml
+!src/main/resources/application.example.yml
+!src/main/resources/application.example.properties
+
+### Project Docs ###
+MD/
