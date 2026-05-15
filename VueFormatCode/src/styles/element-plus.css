@@ -1,0 +1,71 @@
+.el-card {
+  border-color: var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+}
+
+.el-card__header {
+  padding: 18px 20px;
+  border-bottom-color: var(--border-color);
+}
+
+.el-card__body {
+  padding: 20px;
+}
+
+.el-table {
+  --el-table-header-bg-color: #fafafa;
+  --el-table-border-color: var(--border-soft);
+  --el-table-row-hover-bg-color: #f8f8f8;
+}
+
+.el-table th.el-table__cell {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.el-table td.el-table__cell {
+  color: var(--text-color);
+}
+
+.el-button {
+  border-radius: 10px;
+}
+
+.el-button--primary {
+  --el-button-bg-color: var(--brand-primary);
+  --el-button-border-color: var(--brand-primary);
+  --el-button-hover-bg-color: #66b1ff;
+  --el-button-hover-border-color: #66b1ff;
+}
+
+.el-input__wrapper,
+.el-select__wrapper,
+.el-textarea__inner {
+  box-shadow: 0 0 0 1px rgba(123, 117, 34, 0.18) inset;
+}
+
+.el-input__wrapper.is-focus,
+.el-select__wrapper.is-focused,
+.el-textarea__inner:focus {
+  box-shadow:
+    0 0 0 1px var(--brand-primary) inset,
+    0 0 0 3px rgba(64, 158, 255, 0.12);
+}
+
+.el-dialog {
+  border-radius: var(--radius-lg);
+}
+
+.el-dialog__header {
+  margin-right: 0;
+  padding: 20px 20px 12px;
+}
+
+.el-dialog__body {
+  padding: 12px 20px 20px;
+}
+
+.el-tag {
+  border-radius: 999px;
+}

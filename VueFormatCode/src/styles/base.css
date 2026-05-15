@@ -1,0 +1,180 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: inherit;
+  background: var(--app-bg);
+  color: var(--text-color);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px 20px;
+  background: #ededed;
+}
+
+.auth-shell {
+  width: 390px;
+  max-width: calc(100vw - 40px);
+  padding: 36px 28px 24px;
+  border-radius: 30px;
+  background: #f7f7f7;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.12);
+}
+
+.wechat-head {
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.wechat-head .logo {
+  display: grid;
+  place-items: center;
+  width: 74px;
+  height: 74px;
+  margin: 0 auto 18px;
+  border-radius: 22px;
+  background: var(--brand-success);
+  color: #ffffff;
+  font-size: 34px;
+  font-weight: 700;
+}
+
+.wechat-head h1 {
+  margin: 0;
+  color: #111111;
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.wechat-head p {
+  margin: 10px 0 0;
+  color: #8f8f8f;
+  font-size: 15px;
+}
+
+.wechat-form.clean-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding: 0;
+  background: transparent;
+}
+
+.wechat-form.clean-form .field {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  max-width: 270px;
+  margin: 0 auto 24px;
+}
+
+.wechat-form.clean-form .field:last-of-type {
+  margin-bottom: 0;
+}
+
+.wechat-form.clean-form .field input {
+  width: 100%;
+  height: 38px;
+  padding: 0 18px;
+  color: #555555;
+  font-size: 15px;
+  line-height: 38px;
+}
+
+.wechat-form.clean-form .field input::placeholder {
+  color: #a3a3a3;
+}
+
+.wechat-form.clean-form .captcha-field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 270px;
+}
+
+.wechat-form.clean-form .captcha-field input,
+.wechat-form.clean-form .inline-btn,
+.wechat-form.clean-form .captcha-img {
+  width: 252px;
+  max-width: 100%;
+}
+
+.wechat-form.clean-form .captcha-img {
+  height: 74px;
+  object-fit: cover;
+  border: 1px solid #ece8d8;
+  border-radius: 18px;
+  background: #ffffff;
+}
+
+.wechat-form.clean-form .inline-btn {
+  height: 44px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.wechat-form.clean-form .error-msg,
+.wechat-form.clean-form .success-msg {
+  width: 100%;
+  max-width: 270px;
+  margin: -8px auto 14px;
+  text-align: left;
+}
+
+.wechat-form.clean-form .login-btn {
+  width: 100%;
+  max-width: 270px;
+  height: 50px;
+  margin: 16px auto 0;
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.auth-links {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 28px;
+  padding: 0 6px;
+  color: #576b95;
+  font-size: 14px;
+}
+
+.auth-links.single-link {
+  justify-content: center;
+}
