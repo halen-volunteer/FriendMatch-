@@ -10,8 +10,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
 /**
- * 七牛云 OSS 配置
- * 从 application.yaml oss.* 读取配置项
+ * 七牛云 OSS 配置。
+ * 从 application 配置中读取鉴权和上传参数，并注册上传所需 Bean。
  */
 @Data
 @org.springframework.context.annotation.Configuration
@@ -37,30 +37,34 @@ public class OssConfig {
     private long presignExpireSeconds = 300;
 
     /**
-     * 七牛云鉴权对象（全局复用）
+     * 七牛云鉴权对象。
      */
     @Bean
     public Auth qiniuAuth() {
+        // 基于配置文件中的 AK/SK 创建鉴权对象，供生成上传凭证和资源管理时复用。
         return Auth.create(accessKeyId == null ? "" : accessKeyId, accessKeySecret == null ? "" : accessKeySecret);
     }
 
     /**
-     * 七牛云上传管理器
-     * Region 根据 Bucket 所在区域选择：
-     *   华东 z0：Region.region0()
-     *   华北 z1：Region.region1()
-     *   华南 z2：Region.region2()
-     *   北美  na0：Region.regionNa0()
-     *   东南亚 as0：Region.regionAs0()
+     * 七牛云上传管理器。
+     * 当前使用 autoRegion，避免在本地和部署环境间手动切换区域配置。
      */
     @Bean
     public UploadManager uploadManager() {
+        // 上传时由 SDK 自动识别区域，降低环境迁移时的配置复杂度。
         Configuration cfg = new Configuration(Region.autoRegion());
         return new UploadManager(cfg);
     }
 
+    /**
+     * 七牛云 Bucket 管理器。
+     *
+     * @param qiniuAuth 七牛云鉴权对象
+     * @return 七牛 Bucket 管理器，用于删除资源等管理操作
+     */
     @Bean
     public BucketManager bucketManager(Auth qiniuAuth) {
+        // 和上传管理器保持相同区域策略，避免上传和删除走不同配置。
         Configuration cfg = new Configuration(Region.autoRegion());
         return new BucketManager(qiniuAuth, cfg);
     }

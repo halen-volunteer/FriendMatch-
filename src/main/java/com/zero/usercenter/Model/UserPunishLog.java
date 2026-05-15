@@ -61,6 +61,9 @@ public class UserPunishLog {
     /** 撤销人ID（管理员） */
     private Long cancelUserId;
 
+    /** 撤销原因 */
+    private String cancelReason;
+
     /**
      * 处罚记录创建时间
      */

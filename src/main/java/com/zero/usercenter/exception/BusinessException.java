@@ -1,7 +1,8 @@
 package com.zero.usercenter.exception;
 
 /**
- * 业务异常类
+ * 业务异常。
+ * 用于承载可预期的业务校验失败，并交给全局异常处理器统一返回。
  */
 public class BusinessException extends RuntimeException {
     

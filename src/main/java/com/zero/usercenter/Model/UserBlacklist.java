@@ -10,8 +10,8 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * 用户黑名单表
- * @TableName t_user_blacklist
+ * 用户黑名单实体。
+ * 对应表 `t_user_blacklist`，用于记录拉黑关系及其恢复状态。
  */
 @TableName(value = "t_user_blacklist")
 @Data

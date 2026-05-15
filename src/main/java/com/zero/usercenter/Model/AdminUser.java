@@ -9,6 +9,10 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/**
+ * 平台管理员实体。
+ * 这里不是独立账号体系，而是“普通用户 + 管理员扩展角色”的建模方式。
+ */
 @Data
 @TableName("t_admin_user")
 public class AdminUser {

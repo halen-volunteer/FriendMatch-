@@ -6,9 +6,8 @@ import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
 /**
- * 聊天系统 Service 实现类
- * 负责私聊、群聊消息收发、消息管理（撤回/编辑/已读/导出）、
- * 消息收藏/置顶/搜索/举报、群公告等业务逻辑
+ * 聊天域聚合服务。
+ * 这里主要负责暴露统一的聊天业务入口，具体实现拆分在发送、已读、公告、举报和消息管理等子服务中。
  */
 @Service
 public class ChatServiceImpl implements ChatService {
@@ -39,14 +38,14 @@ public class ChatServiceImpl implements ChatService {
      * 查询私聊历史记录
      * 按会话 ID 分页查，查询后异步标记已读并清零未读数
      *
-     * @param friendId 对方用户 ID
-     * @param page     页码
-     * @param pageSize 每页数量
-     * @return 消息列表及总数
+     * @param friendId    对方用户 ID
+     * @param beforeMsgId 向前翻页游标；为空时返回最新一页
+     * @param pageSize    每次返回的消息条数
+     * @return 游标分页后的私聊消息列表
      */
     @Override
-    public Result getPrivateHistory(Long friendId, int page, int pageSize) {
-        return chatSendService.getPrivateHistory(friendId, page, pageSize);
+    public Result getPrivateHistory(Long friendId, Long beforeMsgId, int pageSize) {
+        return chatSendService.getPrivateHistory(friendId, beforeMsgId, pageSize);
     }
 
     // ==================== 群聊 ====================
@@ -68,14 +67,14 @@ public class ChatServiceImpl implements ChatService {
      * 查询群聊历史记录
      * 按会话 ID 分页查，需校验成员身份，查询后异步标记已读
      *
-     * @param teamId   团队 ID
-     * @param page     页码
-     * @param pageSize 每页数量
-     * @return 消息列表及总数
+     * @param teamId      团队 ID
+     * @param beforeMsgId 向前翻页游标；为空时返回最新一页
+     * @param pageSize    每次返回的消息条数
+     * @return 游标分页后的群聊消息列表
      */
     @Override
-    public Result getTeamHistory(Long teamId, int page, int pageSize) {
-        return chatSendService.getTeamHistory(teamId, page, pageSize);
+    public Result getTeamHistory(Long teamId, Long beforeMsgId, int pageSize) {
+        return chatSendService.getTeamHistory(teamId, beforeMsgId, pageSize);
     }
 
     /**
@@ -219,14 +218,8 @@ public class ChatServiceImpl implements ChatService {
     }
 
     /**
-     * 在指定会话内搜索消息
-     * 按 msg_content LIKE 模糊匹配，过滤已删除/已撤回消息
-     *
-     * @param conversationId 会话 ID
-     * @param keyword        搜索关键词
-     * @param page           页码
-     * @param pageSize       每页数量
-     * @return 消息列表及总数
+     * 在指定会话内搜索消息。
+     * 当前实现会先拉取会话消息，再基于不同消息类型提取可搜索文本后做内存过滤。
      */
     @Override
     public Result searchMsg(String conversationId, String keyword, int page, int pageSize) {
@@ -274,17 +267,6 @@ public class ChatServiceImpl implements ChatService {
     }
 
     /**
-     * 提交申诉（A举报人或B被举报人均可，总次数上限3次）
-     *
-     * @param reportId 举报记录 ID
-     * @return 申诉提交结果
-     */
-    @Override
-    public Result appealMsgReport(Long reportId) {
-        return chatReportManageService.appealMsgReport(reportId);
-    }
-
-    /**
      * 管理员处理消息举报（支持多轮申诉）
      * adminDecision: 1-维持处罚  2-撤销处罚/不违规  3-确认违规执行处罚
      *
@@ -320,6 +302,24 @@ public class ChatServiceImpl implements ChatService {
     @Override
     public Result getUnreadCount() {
         return chatReadService.getUnreadCount();
+    }
+
+    /**
+     * 获取最近会话列表。
+     * 返回用户有访问权限、且未被主动隐藏的最近活跃会话。
+     */
+    @Override
+    public Result getRecentConversations() {
+        return chatReadService.getRecentConversations();
+    }
+
+    /**
+     * 从当前用户的会话列表中移除指定会话。
+     * 这里只隐藏会话入口，不会删除好友关系、团队关系或历史消息。
+     */
+    @Override
+    public Result hideConversation(String conversationId) {
+        return chatReadService.hideConversation(conversationId);
     }
 
 }

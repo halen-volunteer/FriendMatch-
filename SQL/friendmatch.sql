@@ -11,11 +11,27 @@
  Target Server Version : 80036 (8.0.36)
  File Encoding         : 65001
 
- Date: 12/04/2026 19:11:45
+ Date: 07/05/2026 21:11:25
 */
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
+
+-- ----------------------------
+-- Table structure for t_admin_audit_log
+-- ----------------------------
+DROP TABLE IF EXISTS `t_admin_audit_log`;
+CREATE TABLE `t_admin_audit_log`  (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '审计日志主键ID',
+  `admin_user_id` bigint NOT NULL COMMENT '操作管理员用户ID',
+  `action_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '操作类型',
+  `action_target` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '操作目标',
+  `action_detail` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '操作详情',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_admin_user_id`(`admin_user_id` ASC) USING BTREE,
+  INDEX `idx_create_time`(`create_time` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '管理员审计日志表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for t_admin_user
@@ -43,6 +59,7 @@ CREATE TABLE `t_appeal`  (
   `appellant_id` bigint NOT NULL COMMENT '申诉人ID',
   `appellant_type` tinyint NOT NULL COMMENT '申诉人类型：1-被处罚用户，2-举报人',
   `related_report_id` bigint NOT NULL COMMENT '关联举报ID',
+  `related_case_id` bigint NULL DEFAULT NULL COMMENT '关联举报主单ID',
   `related_report_type` tinyint NOT NULL COMMENT '举报来源：1-用户举报，2-消息举报',
   `related_punish_id` bigint NULL DEFAULT NULL COMMENT '关联处罚记录ID（t_user_punish_log）',
   `appeal_round` tinyint NOT NULL DEFAULT 1 COMMENT '申诉轮次（1/2/3）',
@@ -50,17 +67,42 @@ CREATE TABLE `t_appeal`  (
   `appeal_evidence` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '申诉证据（图片URL，逗号分隔）',
   `appeal_status` tinyint NULL DEFAULT 0 COMMENT '申诉状态：0-待审核，1-申诉成立，2-驳回',
   `admin_id` bigint NULL DEFAULT NULL COMMENT '本轮负责管理员ID',
+  `assign_time` datetime NULL DEFAULT NULL COMMENT '分配时间',
+  `accept_time` datetime NULL DEFAULT NULL COMMENT '接单时间',
+  `last_dispatch_time` datetime NULL DEFAULT NULL COMMENT '最近一次派单时间',
+  `dispatch_count` tinyint NULL DEFAULT 0 COMMENT '派单次数',
   `admin_reply` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '管理员回复',
   `process_time` datetime NULL DEFAULT NULL COMMENT '处理时间',
   `is_delete` tinyint NULL DEFAULT 0 COMMENT '是否软删除：0-否，1-是',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP,
-  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_appellant_id`(`appellant_id` ASC) USING BTREE,
   INDEX `idx_related_report`(`related_report_id` ASC, `related_report_type` ASC) USING BTREE,
   INDEX `idx_appeal_status`(`appeal_status` ASC) USING BTREE,
   INDEX `idx_admin_id`(`admin_id` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '申诉表（三轮换管理员）' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '申诉表（三轮换管理员）' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for t_appeal_admin_history
+-- ----------------------------
+DROP TABLE IF EXISTS `t_appeal_admin_history`;
+CREATE TABLE `t_appeal_admin_history`  (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `appeal_id` bigint NOT NULL COMMENT '申诉ID',
+  `related_report_id` bigint NOT NULL COMMENT '关联举报ID',
+  `related_report_type` tinyint NOT NULL COMMENT '关联举报类型',
+  `appeal_round` tinyint NOT NULL DEFAULT 1 COMMENT '申诉轮次',
+  `admin_id` bigint NOT NULL COMMENT '管理员ID',
+  `action_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '流转动作：assign/approve/reject/reassign',
+  `action_note` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '动作备注',
+  `is_delete` tinyint NOT NULL DEFAULT 0 COMMENT '软删除：0-否，1-是',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_appeal_admin_history_appeal`(`appeal_id` ASC, `create_time` ASC) USING BTREE,
+  INDEX `idx_appeal_admin_history_report`(`related_report_type` ASC, `related_report_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '申诉管理员流转历史表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for t_chat_message
@@ -74,17 +116,17 @@ CREATE TABLE `t_chat_message`  (
   `conversation_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '会话ID（私聊：min(uid1,uid2)_max(uid1,uid2)；群聊：team_群ID）',
   `msg_type` tinyint NOT NULL DEFAULT 1 COMMENT '消息类型：1-文本，2-图片，3-文件，4-表情包，5-@消息',
   `msg_content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '消息内容：文本=内容，图片/文件=URL，表情包=标识',
-  `is_edited` tinyint NULL DEFAULT 0 COMMENT '是否已编辑：0-否，1-是',
+  `is_edited` tinyint NOT NULL DEFAULT 0 COMMENT '是否已编辑：0-否，1-是',
   `edit_time` datetime NULL DEFAULT NULL COMMENT '编辑时间',
-  `edit_count` int NULL DEFAULT 0 COMMENT '编辑次数',
-  `is_delete` tinyint NULL DEFAULT 0 COMMENT '是否软删除：0-否，1-是',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '发送时间',
-  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `edit_count` int NOT NULL DEFAULT 0 COMMENT '编辑次数',
+  `is_delete` tinyint NOT NULL DEFAULT 0 COMMENT '是否软删除：0-否，1-是',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '发送时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_conversation_create_time`(`conversation_id` ASC, `create_time` ASC) USING BTREE COMMENT '核心索引：按会话ID+时间查消息',
   INDEX `idx_sender_id`(`sender_id` ASC) USING BTREE,
   INDEX `idx_recv_type_id`(`recv_type` ASC, `recv_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 29 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '聊天消息主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 83 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '聊天消息主表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_message_collection
@@ -96,12 +138,12 @@ CREATE TABLE `t_message_collection`  (
   `message_id` bigint NOT NULL COMMENT '被收藏消息ID',
   `collection_note` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '收藏备注（可选）',
   `is_delete` tinyint NULL DEFAULT 0 COMMENT '是否软删除：0-否，1-是',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '收藏时间',
-  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '收藏时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_user_msg`(`user_id` ASC, `message_id` ASC) USING BTREE,
   INDEX `idx_user_id`(`user_id` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '消息收藏表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '消息收藏表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_message_pin
@@ -114,12 +156,12 @@ CREATE TABLE `t_message_pin`  (
   `pin_user_id` bigint NOT NULL COMMENT '置顶操作人ID',
   `pin_order` int NULL DEFAULT 1 COMMENT '置顶顺序（越小越靠前）',
   `is_delete` tinyint NULL DEFAULT 0 COMMENT '是否软删除：0-否，1-是',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '置顶时间',
-  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '置顶时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_conv_msg`(`conversation_id` ASC, `message_id` ASC) USING BTREE,
   INDEX `idx_conversation_id`(`conversation_id` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '消息置顶表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '消息置顶表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_message_read_receipt
@@ -132,13 +174,13 @@ CREATE TABLE `t_message_read_receipt`  (
   `receipt_type` tinyint NOT NULL COMMENT '回执类型：1-已送达，2-已读',
   `receipt_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '回执时间',
   `is_delete` tinyint NULL DEFAULT 0 COMMENT '是否软删除：0-否，1-是',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_msg_user_type`(`msg_id` ASC, `user_id` ASC, `receipt_type` ASC) USING BTREE,
   INDEX `idx_msg_id`(`msg_id` ASC) USING BTREE,
   INDEX `idx_user_id`(`user_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 20765 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '消息回执表（已读/已送达）' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 143444 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '消息回执表（已读/已送达）' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_message_report
@@ -157,15 +199,17 @@ CREATE TABLE `t_message_report`  (
   `admin_action` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '管理员处理动作描述',
   `admin_note` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '管理员备注',
   `appeal_count` tinyint NULL DEFAULT 0 COMMENT '已申诉次数（0-3，超过3次不可再申诉）',
+  `appeal_round` tinyint NOT NULL DEFAULT 1 COMMENT '申诉轮次（1/2/3）',
+  `appealer` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '当前申诉方：reporter-举报人，sender-被举报消息发送者',
   `is_delete` tinyint NULL DEFAULT 0 COMMENT '是否软删除：0-否，1-是',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '举报时间',
-  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '举报时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_message_id`(`message_id` ASC) USING BTREE,
   INDEX `idx_reporter_id`(`reporter_id` ASC) USING BTREE,
   INDEX `idx_ai_check_result`(`ai_check_result` ASC) USING BTREE,
   INDEX `idx_admin_status`(`admin_status` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '消息举报表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '消息举报表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_punish_msg_relation
@@ -180,7 +224,57 @@ CREATE TABLE `t_punish_msg_relation`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_punish_msg`(`punish_log_id` ASC, `msg_id` ASC) USING BTREE,
   INDEX `idx_msg_id`(`msg_id` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '处罚-违规消息关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '处罚-违规消息关联表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for t_report_case
+-- ----------------------------
+DROP TABLE IF EXISTS `t_report_case`;
+CREATE TABLE `t_report_case`  (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '举报主单ID',
+  `report_type` tinyint NOT NULL COMMENT '举报类型：1-用户举报，2-消息举报，3-团队举报',
+  `target_id` bigint NOT NULL COMMENT '被举报目标ID：用户ID/消息ID/团队ID',
+  `case_status` tinyint NOT NULL DEFAULT 0 COMMENT '案件状态：0-进行中，1-已结案',
+  `report_count` int NOT NULL DEFAULT 1 COMMENT '聚合举报次数',
+  `latest_report_time` datetime NULL DEFAULT NULL COMMENT '最近一次举报时间',
+  `priority_level` tinyint NOT NULL DEFAULT 0 COMMENT '优先级：0-普通，1-高优先级',
+  `ai_check_result` tinyint NOT NULL DEFAULT 0 COMMENT 'AI结果：0-待检查或不适用，1-违规，2-正常',
+  `ai_confidence` tinyint NOT NULL DEFAULT 0 COMMENT 'AI置信度（0-100）',
+  `admin_status` tinyint NOT NULL DEFAULT 0 COMMENT '管理员处理状态：0-待审核，1-已成立，2-已驳回，3-已忽略',
+  `admin_action` tinyint NULL DEFAULT NULL COMMENT '管理员处理动作编码',
+  `admin_note` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '管理员备注',
+  `admin_id` bigint NULL DEFAULT NULL COMMENT '当前处理管理员ID',
+  `process_time` datetime NULL DEFAULT NULL COMMENT '处理时间',
+  `appeal_count` tinyint NOT NULL DEFAULT 0 COMMENT '累计申诉次数',
+  `is_delete` tinyint NOT NULL DEFAULT 0 COMMENT '软删除：0-否，1-是',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_report_case_active`(`report_type` ASC, `target_id` ASC, `case_status` ASC, `is_delete` ASC) USING BTREE,
+  INDEX `idx_report_case_status`(`admin_status` ASC, `latest_report_time` ASC) USING BTREE,
+  INDEX `idx_report_case_priority`(`priority_level` ASC, `latest_report_time` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '举报主单表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for t_report_detail
+-- ----------------------------
+DROP TABLE IF EXISTS `t_report_detail`;
+CREATE TABLE `t_report_detail`  (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '举报明细ID',
+  `case_id` bigint NOT NULL COMMENT '关联举报主单ID',
+  `report_type` tinyint NOT NULL COMMENT '举报类型：1-用户举报，2-消息举报，3-团队举报',
+  `target_id` bigint NOT NULL COMMENT '被举报目标ID：用户ID/消息ID/团队ID',
+  `reporter_id` bigint NOT NULL COMMENT '举报人ID',
+  `report_reason` tinyint NOT NULL COMMENT '举报原因',
+  `report_content` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '举报补充说明',
+  `report_evidence` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '举报证据',
+  `is_delete` tinyint NOT NULL DEFAULT 0 COMMENT '软删除：0-否，1-是',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_report_detail_reporter`(`case_id` ASC, `reporter_id` ASC, `is_delete` ASC) USING BTREE,
+  INDEX `idx_report_detail_case`(`case_id` ASC, `create_time` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '举报明细表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for t_search_history
@@ -194,13 +288,13 @@ CREATE TABLE `t_search_history`  (
   `search_count` int NULL DEFAULT 1 COMMENT '搜索次数',
   `last_search_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '最后搜索时间',
   `is_delete` tinyint NULL DEFAULT 0 COMMENT '是否软删除：0-否，1-是',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_user_keyword`(`user_id` ASC, `search_type` ASC, `search_keyword` ASC) USING BTREE,
   INDEX `idx_user_id`(`user_id` ASC) USING BTREE,
   INDEX `idx_last_search_time`(`last_search_time` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '搜索历史表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 18 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '搜索历史表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_search_hot_keyword
@@ -213,12 +307,12 @@ CREATE TABLE `t_search_hot_keyword`  (
   `search_count` int NULL DEFAULT 0 COMMENT '搜索次数',
   `rank` int NULL DEFAULT 0 COMMENT '排名',
   `is_delete` tinyint NULL DEFAULT 0 COMMENT '是否软删除：0-否，1-是',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_keyword_type`(`keyword` ASC, `search_type` ASC) USING BTREE,
   INDEX `idx_rank`(`rank` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '热门搜索词表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 14 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '热门搜索词表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_system_notice
@@ -230,15 +324,15 @@ CREATE TABLE `t_system_notice`  (
   `notice_type` tinyint NOT NULL COMMENT '通知类型：1-入群审批通过，2-入群审批拒绝，3-被移出团队，4-账号异常，5-反馈回复，6-处罚通知',
   `notice_content` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '通知内容',
   `related_id` bigint NULL DEFAULT NULL COMMENT '关联ID（申请人ID、团队ID、处罚ID等）',
-  `is_read` tinyint NULL DEFAULT 0 COMMENT '是否已读：0-否，1-是',
+  `is_read` tinyint NOT NULL DEFAULT 0 COMMENT '是否已读：0-否，1-是',
   `read_time` datetime NULL DEFAULT NULL COMMENT '已读时间',
-  `is_delete` tinyint NULL DEFAULT 0 COMMENT '是否软删除：0-否，1-是',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '通知创建时间',
-  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `is_delete` tinyint NOT NULL DEFAULT 0 COMMENT '是否软删除：0-否，1-是',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '通知创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_user_read`(`user_id` ASC, `is_read` ASC) USING BTREE,
   INDEX `idx_notice_type`(`notice_type` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统通知表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 12 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统通知表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_team
@@ -251,19 +345,20 @@ CREATE TABLE `t_team`  (
   `team_intro` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '团队简介',
   `team_tags` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '团队标签（逗号分隔）',
   `creator_id` bigint NOT NULL COMMENT '团队创建人ID',
-  `max_member` int NULL DEFAULT 200 COMMENT '团队最大成员数',
+  `max_member` int NOT NULL DEFAULT 200 COMMENT '团队最大成员数',
   `team_type` tinyint NOT NULL COMMENT '团队类型：1-公开，2-私有',
   `join_rule` tinyint NOT NULL COMMENT '加入规则：1-申请审批，2-仅邀请，3-密码加入',
   `join_password` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '加入密码（仅join_rule=3有效，BCrypt加密）',
-  `team_all_mute` tinyint NULL DEFAULT 0 COMMENT '团队全员禁言：0-正常，1-禁言（队长/管理员除外）',
-  `is_delete` tinyint NULL DEFAULT 0 COMMENT '是否软删除：0-否，1-是',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `team_all_mute` tinyint NOT NULL DEFAULT 0 COMMENT '团队全员禁言：0-正常，1-禁言（队长/管理员除外）',
+  `team_all_mute_unpunish_time` datetime NULL DEFAULT NULL COMMENT '全员禁言解除时间',
+  `is_delete` tinyint NOT NULL DEFAULT 0 COMMENT '是否软删除：0-否，1-是',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_creator_id`(`creator_id` ASC) USING BTREE,
   INDEX `idx_team_type`(`team_type` ASC) USING BTREE,
   INDEX `idx_team_name`(`team_name` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '团队基础信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '团队基础信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_team_apply
@@ -279,12 +374,12 @@ CREATE TABLE `t_team_apply`  (
   `audit_msg` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '审核备注',
   `audit_time` datetime NULL DEFAULT NULL COMMENT '审核时间',
   `is_delete` tinyint NULL DEFAULT 0 COMMENT '是否软删除：0-否，1-是',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '申请时间',
-  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '申请时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_team_audit`(`team_id` ASC, `audit_status` ASC) USING BTREE,
   INDEX `idx_apply_user`(`apply_user_id` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '团队加入申请表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '团队加入申请表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_team_member
@@ -294,18 +389,18 @@ CREATE TABLE `t_team_member`  (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '成员关联主键ID',
   `team_id` bigint NOT NULL COMMENT '关联团队ID',
   `user_id` bigint NOT NULL COMMENT '关联用户ID',
-  `role_type` tinyint NOT NULL DEFAULT 3 COMMENT '角色类型：1-队长，2-管理员，3-普通成员，4-嘉宾',
-  `join_source` tinyint NULL DEFAULT 1 COMMENT '加入来源：1-直接加入，2-邀请加入，3-申请审批，4-二维码加入，5-链接加入，6-密码加入',
+  `role_type` tinyint NOT NULL DEFAULT 3 COMMENT '角色类型：1-队长，2-管理员，3-普通成员',
+  `join_source` tinyint NOT NULL DEFAULT 1 COMMENT '加入来源：1-直接加入，2-邀请加入，3-申请审批，4-二维码加入，5-链接加入，6-密码加入',
   `invite_user_id` bigint NULL DEFAULT NULL COMMENT '邀请人ID（邀请加入时有值）',
-  `team_mute_type` tinyint NULL DEFAULT 0 COMMENT '团队内禁言状态：0-正常，1-禁言',
+  `team_mute_type` tinyint NOT NULL DEFAULT 0 COMMENT '团队内禁言状态：0-正常，1-禁言',
   `team_mute_unpunish_time` datetime NULL DEFAULT NULL COMMENT '团队内禁言解除时间',
-  `join_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '加入团队时间',
-  `last_active_time` datetime NULL DEFAULT NULL COMMENT '最后活跃时间',
+  `join_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '加入团队时间',
+  `last_active_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '最后活跃时间',
   `quit_time` datetime NULL DEFAULT NULL COMMENT '退出团队时间',
-  `is_quit` tinyint NULL DEFAULT 0 COMMENT '是否退出团队：0-否，1-是',
-  `is_delete` tinyint NULL DEFAULT 0 COMMENT '是否软删除：0-否，1-是',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `is_quit` tinyint NOT NULL DEFAULT 0 COMMENT '是否退出团队：0-否，1-是',
+  `is_delete` tinyint NOT NULL DEFAULT 0 COMMENT '是否软删除：0-否，1-是',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_team_user`(`team_id` ASC, `user_id` ASC, `is_quit` ASC) USING BTREE,
   INDEX `idx_user_id`(`user_id` ASC) USING BTREE,
@@ -313,7 +408,7 @@ CREATE TABLE `t_team_member`  (
   INDEX `idx_team_mute`(`team_id` ASC, `team_mute_type` ASC, `team_mute_unpunish_time` ASC) USING BTREE,
   INDEX `idx_team_role_type`(`team_id` ASC, `role_type` ASC) USING BTREE,
   INDEX `idx_team_join_time`(`team_id` ASC, `join_time` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '团队成员关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '团队成员关联表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_team_recommendation
@@ -328,36 +423,12 @@ CREATE TABLE `t_team_recommendation`  (
   `is_clicked` tinyint NULL DEFAULT 0 COMMENT '是否被点击：0-否，1-是',
   `is_joined` tinyint NULL DEFAULT 0 COMMENT '是否加入：0-否，1-是',
   `is_delete` tinyint NULL DEFAULT 0 COMMENT '是否软删除：0-否，1-是',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP,
-  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_recommend_to_user`(`recommend_to_user_id` ASC) USING BTREE,
   INDEX `idx_recommend_score`(`recommend_score` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '团队推荐记录表' ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Table structure for t_team_report
--- ----------------------------
-DROP TABLE IF EXISTS `t_team_report`;
-CREATE TABLE `t_team_report`  (
-  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '举报主键ID',
-  `reporter_id` bigint NOT NULL COMMENT '举报人ID',
-  `reported_team_id` bigint NOT NULL COMMENT '被举报团队ID',
-  `report_reason` tinyint NOT NULL COMMENT '举报原因：1-违规内容，2-诈骗，3-骚扰，4-广告，5-其他',
-  `report_content` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '举报详细描述',
-  `report_evidence` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '举报证据',
-  `report_status` tinyint NULL DEFAULT 0 COMMENT '处理状态：0-待审核，1-已处理，2-驳回，3-已关闭',
-  `admin_action` tinyint NULL DEFAULT NULL COMMENT '管理员处理动作：1-警告，2-限制功能，3-解散团队，4-无处理',
-  `admin_note` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '管理员备注',
-  `admin_id` bigint NULL DEFAULT NULL COMMENT '处理管理员ID',
-  `process_time` datetime NULL DEFAULT NULL COMMENT '处理时间',
-  `is_delete` tinyint NULL DEFAULT 0 COMMENT '是否软删除：0-否，1-是',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP,
-  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_reported_team_id`(`reported_team_id` ASC) USING BTREE,
-  INDEX `idx_report_status`(`report_status` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '团队举报表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 174 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '团队推荐记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_user
@@ -372,19 +443,19 @@ CREATE TABLE `t_user`  (
   `user_intro` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '用户个人简介',
   `user_password` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '登录密码（BCrypt加密密文）',
   `user_tags` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '用户标签（逗号分隔）',
-  `privacy_setting` json NULL COMMENT '隐私设置：view_info(1-所有人，2-仅团队成员)；send_msg(1-所有人，2-仅团队成员，3-需验证)；search_by_email(0-不允许通过邮箱搜索，1-允许)',
-  `global_punish_type` tinyint NULL DEFAULT 0 COMMENT '全局处罚类型：0-无处罚，1-全局禁言，2-永久封号',
+  `privacy_setting` json NOT NULL COMMENT '隐私设置：view_info(1-所有人，2-仅团队成员)；send_msg(1-所有人，2-仅团队成员，3-需验证)；search_by_email(0-不允许通过邮箱搜索，1-允许)',
+  `global_punish_type` tinyint NOT NULL DEFAULT 0 COMMENT '全局处罚类型：0-无处罚，1-全局禁言，2-永久封号',
   `global_unpunish_time` datetime NULL DEFAULT NULL COMMENT '全局处罚解除时间（禁言有效，封号为NULL）',
   `last_login_time` datetime NULL DEFAULT NULL COMMENT '最后登录时间',
   `last_login_ip` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '最后登录IP',
-  `is_delete` tinyint NULL DEFAULT 0 COMMENT '是否软删除：0-否，1-是',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `is_delete` tinyint NOT NULL DEFAULT 0 COMMENT '是否软删除：0-否，1-是',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_account`(`user_account` ASC) USING BTREE,
   UNIQUE INDEX `uk_user_email`(`user_email` ASC) USING BTREE,
   INDEX `idx_global_punish`(`global_punish_type` ASC, `global_unpunish_time` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户基础信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户基础信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_user_blacklist
@@ -396,12 +467,12 @@ CREATE TABLE `t_user_blacklist`  (
   `black_user_id` bigint NOT NULL COMMENT '被拉黑方用户ID',
   `black_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '拉黑原因',
   `is_delete` tinyint NULL DEFAULT 0 COMMENT '是否解除拉黑：0-未解除，1-已解除',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '拉黑时间',
-  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '拉黑时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_user_black`(`user_id` ASC, `black_user_id` ASC, `is_delete` ASC) USING BTREE,
   INDEX `idx_black_user_id`(`black_user_id` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户黑名单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户黑名单表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_user_device
@@ -421,13 +492,13 @@ CREATE TABLE `t_user_device`  (
   `is_trusted` tinyint NULL DEFAULT 0 COMMENT '是否信任：0-否，1-是',
   `is_active` tinyint NULL DEFAULT 1 COMMENT '是否在线：0-已下线，1-在线',
   `is_delete` tinyint NULL DEFAULT 0 COMMENT '是否软删除：0-否，1-是',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP,
-  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_device_id`(`device_id` ASC) USING BTREE,
   INDEX `idx_user_id`(`user_id` ASC) USING BTREE,
   INDEX `idx_last_login_time`(`user_id` ASC, `last_login_time` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户设备管理表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户设备管理表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_user_feedback
@@ -446,12 +517,12 @@ CREATE TABLE `t_user_feedback`  (
   `handle_content` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '处理结果/回复内容',
   `handle_time` datetime NULL DEFAULT NULL COMMENT '处理完成时间',
   `is_delete` tinyint NULL DEFAULT 0 COMMENT '是否软删除：0-否，1-是',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '反馈时间',
-  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '反馈时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_user_handle`(`user_id` ASC, `handle_status` ASC) USING BTREE,
   INDEX `idx_handle_time`(`handle_time` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户反馈表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户反馈表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_user_friend
@@ -470,7 +541,7 @@ CREATE TABLE `t_user_friend`  (
   UNIQUE INDEX `uk_user_friend_status`(`user_id` ASC, `friend_id` ASC, `friend_status` ASC) USING BTREE,
   INDEX `idx_friend_id`(`friend_id` ASC) USING BTREE,
   INDEX `idx_friend_status`(`friend_status` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户好友关系表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户好友关系表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_user_login_log
@@ -485,7 +556,7 @@ CREATE TABLE `t_user_login_log`  (
   `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '登录时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_user_id`(`user_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户登录日志表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 32 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户登录日志表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_user_punish_log
@@ -505,13 +576,14 @@ CREATE TABLE `t_user_punish_log`  (
   `is_cancel` tinyint NULL DEFAULT 0 COMMENT '是否撤销处罚：0-未撤销，1-已撤销',
   `cancel_time` datetime NULL DEFAULT NULL COMMENT '处罚撤销时间',
   `cancel_user_id` bigint NULL DEFAULT NULL COMMENT '撤销人ID（管理员）',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
-  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `cancel_reason` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '撤销原因',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_punish_user`(`punish_user_id` ASC, `punish_type` ASC) USING BTREE,
   INDEX `idx_punish_time`(`punish_start_time` ASC, `punish_end_time` ASC) USING BTREE,
   INDEX `idx_operate_type`(`operate_type` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户处罚主记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户处罚主记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for t_user_recommendation
@@ -526,12 +598,53 @@ CREATE TABLE `t_user_recommendation`  (
   `is_clicked` tinyint NULL DEFAULT 0 COMMENT '是否被点击：0-否，1-是',
   `is_added` tinyint NULL DEFAULT 0 COMMENT '是否被添加为好友：0-否，1-是',
   `is_delete` tinyint NULL DEFAULT 0 COMMENT '是否软删除：0-否，1-是',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_recommend_to_user`(`recommend_to_user_id` ASC) USING BTREE,
   INDEX `idx_recommend_score`(`recommend_score` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户推荐记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 60 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户推荐记录表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for t_user_violation_count
+-- ----------------------------
+DROP TABLE IF EXISTS `t_user_violation_count`;
+CREATE TABLE `t_user_violation_count`  (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '统计主键ID',
+  `user_id` bigint NOT NULL COMMENT '关联用户ID',
+  `total_violation_num` int NULL DEFAULT 0 COMMENT '累计违规总次数',
+  `latest_violation_time` datetime NULL DEFAULT NULL COMMENT '最近一次违规时间',
+  `reset_time` datetime NULL DEFAULT NULL COMMENT '违规次数重置时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_user_violation`(`user_id` ASC) USING BTREE,
+  INDEX `idx_latest_violation`(`latest_violation_time` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户违规次数统计表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for t_team_report
+-- ----------------------------
+DROP TABLE IF EXISTS `t_team_report`;
+CREATE TABLE `t_team_report`  (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '举报主键ID',
+  `reporter_id` bigint NOT NULL COMMENT '举报人ID',
+  `reported_team_id` bigint NOT NULL COMMENT '被举报团队ID',
+  `report_reason` tinyint NOT NULL COMMENT '举报原因：1-违规内容，2-诈骗，3-骚扰，4-广告，5-其他',
+  `report_content` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '举报详细描述',
+  `report_evidence` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '举报证据',
+  `report_status` tinyint NULL DEFAULT 0 COMMENT '处理状态：0-待审核，1-已处理，2-驳回，3-已关闭',
+  `admin_action` tinyint NULL DEFAULT NULL COMMENT '管理员处理动作：1-警告，2-限制功能，3-解散团队，4-无处理',
+  `admin_note` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '管理员备注',
+  `admin_id` bigint NULL DEFAULT NULL COMMENT '处理管理员ID',
+  `process_time` datetime NULL DEFAULT NULL COMMENT '处理时间',
+  `is_delete` tinyint NULL DEFAULT 0 COMMENT '是否软删除：0-否，1-是',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_reported_team_id`(`reported_team_id` ASC) USING BTREE,
+  INDEX `idx_report_status`(`report_status` ASC) USING BTREE
+);
 
 -- ----------------------------
 -- Table structure for t_user_report
@@ -554,30 +667,30 @@ CREATE TABLE `t_user_report`  (
   `process_time` datetime NULL DEFAULT NULL COMMENT '处理时间',
   `appeal_count` tinyint NULL DEFAULT 0 COMMENT '已申诉次数（0-3）',
   `is_delete` tinyint NULL DEFAULT 0 COMMENT '是否软删除：0-否，1-是',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP,
-  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_reported_user_id`(`reported_user_id` ASC) USING BTREE,
   INDEX `idx_report_status`(`report_status` ASC) USING BTREE,
   INDEX `idx_create_time`(`create_time` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户举报表' ROW_FORMAT = Dynamic;
+);
 
 -- ----------------------------
--- Table structure for t_user_violation_count
+-- Triggers structure for table t_team_member
 -- ----------------------------
-DROP TABLE IF EXISTS `t_user_violation_count`;
-CREATE TABLE `t_user_violation_count`  (
-  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '统计主键ID',
-  `user_id` bigint NOT NULL COMMENT '关联用户ID',
-  `total_violation_num` int NULL DEFAULT 0 COMMENT '累计违规总次数',
-  `latest_violation_time` datetime NULL DEFAULT NULL COMMENT '最近一次违规时间',
-  `reset_time` datetime NULL DEFAULT NULL COMMENT '违规次数重置时间',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `uk_user_violation`(`user_id` ASC) USING BTREE,
-  INDEX `idx_latest_violation`(`latest_violation_time` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户违规次数统计表' ROW_FORMAT = Dynamic;
+DROP TRIGGER IF EXISTS `trg_t_team_member_default_time`;
+delimiter ;;
+CREATE TRIGGER `trg_t_team_member_default_time` BEFORE INSERT ON `t_team_member` FOR EACH ROW BEGIN
+  IF NEW.join_time IS NULL THEN
+    SET NEW.join_time = CURRENT_TIMESTAMP;
+  END IF;
+
+  IF NEW.last_active_time IS NULL THEN
+    SET NEW.last_active_time = NEW.join_time;
+  END IF;
+END
+;;
+delimiter ;
 
 -- ----------------------------
 -- Triggers structure for table t_user
@@ -585,11 +698,27 @@ CREATE TABLE `t_user_violation_count`  (
 DROP TRIGGER IF EXISTS `trg_t_user_default_privacy`;
 delimiter ;;
 CREATE TRIGGER `trg_t_user_default_privacy` BEFORE INSERT ON `t_user` FOR EACH ROW BEGIN
-  IF NEW.`privacy_setting` IS NULL THEN
-    SET NEW.`privacy_setting` = '{"view_info":1,"send_msg":1,"search_by_email":0}';
+  IF NEW.privacy_setting IS NULL THEN
+    SET NEW.privacy_setting = JSON_OBJECT('view_info', 1, 'send_msg', 1, 'search_by_email', 0);
+  END IF;
+
+  IF NEW.global_punish_type IS NULL THEN
+    SET NEW.global_punish_type = 0;
+  END IF;
+
+  IF NEW.is_delete IS NULL THEN
+    SET NEW.is_delete = 0;
   END IF;
 END
 ;;
 delimiter ;
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- ----------------------------
+-- 2026-05-13 聊天消息软撤回字段补充
+-- 已存在对应字段的环境可跳过
+-- ----------------------------
+ALTER TABLE `t_chat_message`
+    ADD COLUMN `is_revoke` tinyint NOT NULL DEFAULT 0 COMMENT '是否已撤回：0-否，1-是' AFTER `edit_count`,
+    ADD COLUMN `revoke_time` datetime NULL DEFAULT NULL COMMENT '撤回时间' AFTER `is_revoke`;

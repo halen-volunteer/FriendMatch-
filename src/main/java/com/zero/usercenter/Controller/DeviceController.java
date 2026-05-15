@@ -24,6 +24,7 @@ public class DeviceController {
      */
     @PostMapping("/device/bind")
     public Result bindDevice(@RequestBody DeviceBindDTO dto) {
+        // 绑定设备会走设备归一化和幂等 upsert 逻辑，controller 只做请求分发。
         return deviceService.bindDevice(dto);
     }
 
@@ -34,6 +35,7 @@ public class DeviceController {
      */
     @GetMapping("/devices")
     public Result getMyDevices() {
+        // 设备列表由 service 负责按最近活跃时间排序并过滤已删除记录。
         return deviceService.getMyDevices();
     }
 
@@ -45,6 +47,7 @@ public class DeviceController {
      */
     @PostMapping("/device/trust")
     public Result trustDevice(@RequestParam String deviceId) {
+        // 信任设备只更新当前用户自己的设备记录，归属校验在 service 层完成。
         return deviceService.trustDevice(deviceId);
     }
 
@@ -56,6 +59,7 @@ public class DeviceController {
      */
     @PostMapping("/device/logout")
     public Result logoutDevice(@RequestParam String deviceId) {
+        // 设备下线不会删记录，只更新活跃状态，具体处理由 service 负责。
         return deviceService.logoutDevice(deviceId);
     }
 
@@ -67,6 +71,7 @@ public class DeviceController {
      */
     @DeleteMapping("/device/{deviceId}")
     public Result deleteDevice(@PathVariable String deviceId) {
+        // 删除设备采用软删除，controller 只把设备标识转给 service。
         return deviceService.deleteDevice(deviceId);
     }
 }

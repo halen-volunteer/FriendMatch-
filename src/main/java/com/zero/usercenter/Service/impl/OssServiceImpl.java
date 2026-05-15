@@ -55,6 +55,7 @@ public class OssServiceImpl implements OssService {
 
     @Override
     public Result presign(OssPresignDTO dto) {
+        // 1. 先确认登录和 OSS 基础配置完整，避免生成出不可用凭证。
         Long userId = UserHolder.getUserId();
         if (userId == null) throw new BusinessException("用户未登录");
 
@@ -74,7 +75,7 @@ public class OssServiceImpl implements OssService {
             return Result.fail("OSS accessKeySecret 配置异常，请填写正确的七牛 SecretKey");
         }
 
-        // 参数校验
+        // 2. 校验文件名和消息类型，消息类型决定允许上传的文件范围。
         if (dto.getFileName() == null || dto.getFileName().isBlank())
             return Result.fail("文件名不能为空");
         if (dto.getMsgType() == null || dto.getMsgType() < 2 || dto.getMsgType() > 4)
@@ -84,7 +85,7 @@ public class OssServiceImpl implements OssService {
         String ext = extractExt(originalName).toLowerCase();
         if (ext.isEmpty()) return Result.fail("文件名缺少扩展名");
 
-        // 按 msgType 校验扩展名和大小
+        // 3. 按 msgType 校验扩展名和文件大小，防止前端越权上传不允许的内容。
         switch (dto.getMsgType()) {
             case 2 -> {
                 if (!IMAGE_EXT.contains(ext)) return Result.fail("不支持的图片格式，允许：" + IMAGE_EXT);
@@ -103,7 +104,7 @@ public class OssServiceImpl implements OssService {
             }
         }
 
-        // 生成唯一 Key，按 msgType 分目录
+        // 4. 生成唯一文件 key，并按资源类型分目录，方便后续运维和资源管理。
         String dir = switch (dto.getMsgType()) {
             case 2 -> "images";
             case 3 -> "files";
@@ -112,8 +113,7 @@ public class OssServiceImpl implements OssService {
         };
         String key = dir + "/" + userId + "/" + UUID.randomUUID() + "." + ext;
 
-        // 生成七牛云 UploadToken
-        // 指定 key，前端只能上传到这个固定路径，防止覆盖其他文件
+        // 5. 生成七牛 UploadToken，并绑定固定 key，防止前端任意覆盖其他路径文件。
         String uploadToken = qiniuAuth.uploadToken(
                 ossConfig.getBucketName(),
                 key,
@@ -121,7 +121,7 @@ public class OssServiceImpl implements OssService {
                 null
         );
 
-        // 最终访问 URL
+        // 6. 组装最终访问地址和上传参数，前端据此直接走七牛直传。
         String fileUrl = ossConfig.getUrlPrefix() + "/" + key;
 
         Map<String, Object> data = new HashMap<>();
@@ -139,6 +139,7 @@ public class OssServiceImpl implements OssService {
      * 使用 autoRegion 时统一用华东入口，SDK 自动路由
      */
     private String resolveUploadUrl() {
+        // 优先使用显式配置的上传域名，没有配置时回退到默认区域入口。
         if (ossConfig.getUploadUrl() != null && !ossConfig.getUploadUrl().isBlank()) {
             return ossConfig.getUploadUrl().trim();
         }
@@ -149,6 +150,7 @@ public class OssServiceImpl implements OssService {
      * 从文件名中提取扩展名
      */
     private String extractExt(String fileName) {
+        // 从原始文件名中提取扩展名，供格式白名单校验使用。
         int dotIdx = fileName.lastIndexOf('.');
         if (dotIdx < 0 || dotIdx == fileName.length() - 1) return "";
         return fileName.substring(dotIdx + 1);

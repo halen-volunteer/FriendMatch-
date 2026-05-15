@@ -10,8 +10,8 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * 聊天消息表
- * @TableName t_chat_message
+ * 聊天消息实体。
+ * 对应表 `t_chat_message`，统一承载私聊和群聊消息记录。
  */
 @TableName(value = "t_chat_message")
 @Data
@@ -20,7 +20,7 @@ public class ChatMessage {
     /**
      * 消息主键ID
      */
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.INPUT)
     private Long id;
 
     /**
@@ -49,7 +49,8 @@ public class ChatMessage {
     private Integer msgType;
 
     /**
-     * 消息内容：文本=内容，图片/文件=URL，表情包=标识
+     * 消息内容。
+     * 具体结构由消息类型决定，复杂媒体消息通常会序列化为 JSON 字符串。
      */
     private String msgContent;
 
@@ -67,6 +68,16 @@ public class ChatMessage {
      * 编辑次数
      */
     private Integer editCount;
+
+    /**
+     * 是否已撤回：0-否，1-是
+     */
+    private Integer isRevoke;
+
+    /**
+     * 撤回时间
+     */
+    private LocalDateTime revokeTime;
 
     /**
      * 是否软删除：0-否，1-是

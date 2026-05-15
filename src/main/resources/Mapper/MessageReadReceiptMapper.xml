@@ -3,9 +3,9 @@
 <mapper namespace="com.zero.usercenter.Mapper.MessageReadReceiptMapper">
 
     <!--
-        批量插入消息回执，利用 INSERT IGNORE 跳过唯一索引冲突
+        批量插入消息回执，利用 INSERT IGNORE 跳过唯一索引冲突。
         唯一索引：uk_msg_user_type (msg_id, user_id, receipt_type)
-        避免 N+1 的 SELECT+INSERT，改为 1次SELECT查重 + 1次批量INSERT IGNORE
+        这样可以避免逐条查重插入带来的 N+1 开销。
     -->
     <insert id="batchInsertIgnore">
         INSERT IGNORE INTO t_message_read_receipt

@@ -9,13 +9,14 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 消息回执 Mapper
+ * 消息回执 Mapper。
+ * 负责消息送达/已读回执的基础 CRUD 和批量幂等写入。
  */
 @Mapper
 public interface MessageReadReceiptMapper extends BaseMapper<MessageReadReceipt> {
 
     /**
-     * 批量插入消息回执，利用 INSERT IGNORE 跳过唯一索引冲突
+     * 批量插入消息回执，利用 INSERT IGNORE 跳过唯一索引冲突。
      * 唯一索引：uk_msg_user_type (msg_id, user_id, receipt_type)
      *
      * @param msgIds      消息 ID 列表

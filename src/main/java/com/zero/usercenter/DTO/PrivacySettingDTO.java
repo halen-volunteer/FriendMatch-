@@ -3,7 +3,7 @@ package com.zero.usercenter.DTO;
 import lombok.Data;
 
 /**
- * 用户隐私设置 DTO
+ * 用户隐私设置 DTO。
  */
 @Data
 public class PrivacySettingDTO {

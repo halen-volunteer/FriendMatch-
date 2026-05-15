@@ -10,6 +10,9 @@ public class TeamSearchVO {
     private String teamIntro;
     private String teamTags;
     private Integer memberCount;
+    private Integer maxMember;
+    private Integer teamType;
+    private Integer joinRule;
     private Integer isMember;
     private Integer similarityScore;
     private String matchReason;

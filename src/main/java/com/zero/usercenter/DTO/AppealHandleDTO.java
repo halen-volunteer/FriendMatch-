@@ -3,15 +3,19 @@ package com.zero.usercenter.DTO;
 import lombok.Data;
 
 /**
- * 申诉处理 DTO（管理员）。
+ * 管理员处理申诉 DTO。
  */
 @Data
 public class AppealHandleDTO {
 
-    /** 申诉记录ID。 */
+    /** 申诉记录 ID。 */
     private Long appealId;
 
-    /** 处理状态（1-通过，2-驳回）。 */
+    /**
+     * 申诉处理结果：
+     * 1-撤销处罚
+     * 2-维持处罚
+     */
     private Integer appealStatus;
 
     /** 管理员处理回复。 */

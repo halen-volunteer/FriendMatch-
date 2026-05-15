@@ -1,62 +1,79 @@
 package com.zero.usercenter.config;
 
-import org.springframework.amqp.core.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.DirectExchange;
+import org.springframework.amqp.core.FanoutExchange;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * RabbitMQ 配置类
- * 定义交换机、队列、绑定关系以及消息转换器
+ * RabbitMQ 基础配置。
+ * 统一声明交换机、队列、绑定关系，以及生产端发送确认能力。
  */
 @Configuration
 public class RabbitMQConfig {
 
-    // ==================== 交换机名称 ====================
-    /** 好友申请交换机 */
+    /** 好友申请事件交换机。 */
     public static final String FRIEND_REQUEST_EXCHANGE = "friend.request.exchange";
-    /** 好友操作交换机 */
+    /** 好友关系操作交换机，例如删除好友、拉黑。 */
     public static final String FRIEND_OPERATION_EXCHANGE = "friend.operation.exchange";
-    /** 系统通知交换机 */
+    /** 系统通知交换机。 */
     public static final String SYSTEM_NOTIFICATION_EXCHANGE = "system.notification.exchange";
+    /** 邮件发送交换机。 */
+    public static final String EMAIL_EXCHANGE = "email.exchange";
+    /** 登录日志交换机。 */
+    public static final String LOGIN_LOG_EXCHANGE = "login.log.exchange";
+    public static final String CHAT_MESSAGE_EXCHANGE = "chat.message.exchange";
 
-    // ==================== 队列名称 ====================
-    /** 好友申请队列 */
+    /** 好友申请队列。 */
     public static final String FRIEND_REQUEST_QUEUE = "friend.request.queue";
-    /** 好友同意队列 */
+    /** 好友申请通过队列。 */
     public static final String FRIEND_AGREE_QUEUE = "friend.agree.queue";
-    /** 好友拒绝队列 */
+    /** 好友申请拒绝队列。 */
     public static final String FRIEND_REJECT_QUEUE = "friend.reject.queue";
-    /** 好友删除队列 */
+    /** 删除好友队列。 */
     public static final String FRIEND_DELETE_QUEUE = "friend.delete.queue";
-    /** 拉黑用户队列 */
+    /** 黑名单操作队列。 */
     public static final String BLACKLIST_QUEUE = "blacklist.queue";
-    /** 系统通知队列 */
+    /** 系统通知队列。 */
     public static final String SYSTEM_NOTIFICATION_QUEUE = "system.notification.queue";
+    /** 邮件发送队列。 */
+    public static final String EMAIL_QUEUE = "email.queue";
+    /** 登录日志队列。 */
+    public static final String LOGIN_LOG_QUEUE = "login.log.queue";
+    public static final String CHAT_MESSAGE_QUEUE = "chat.message.queue";
 
-    // ==================== 路由键 ====================
-    /** 好友申请路由键 */
+    /** 好友申请路由键。 */
     public static final String FRIEND_REQUEST_ROUTING_KEY = "friend.request";
-    /** 好友同意路由键 */
+    /** 好友申请通过路由键。 */
     public static final String FRIEND_AGREE_ROUTING_KEY = "friend.agree";
-    /** 好友拒绝路由键 */
+    /** 好友申请拒绝路由键。 */
     public static final String FRIEND_REJECT_ROUTING_KEY = "friend.reject";
-    /** 好友删除路由键 */
+    /** 删除好友路由键。 */
     public static final String FRIEND_DELETE_ROUTING_KEY = "friend.delete";
-    /** 拉黑用户路由键 */
+    /** 黑名单路由键。 */
     public static final String BLACKLIST_ROUTING_KEY = "blacklist";
-    /** 系统通知路由键 */
+    /** 系统通知路由键。当前 fanout 模式下实际不会使用该值。 */
     public static final String SYSTEM_NOTIFICATION_ROUTING_KEY = "system.notification";
-
-    // ==================== 交换机定义 ====================
+    /** 邮件路由键。 */
+    public static final String EMAIL_ROUTING_KEY = "email.send";
+    /** 登录日志路由键。 */
+    public static final String LOGIN_LOG_ROUTING_KEY = "login.log";
+    public static final String CHAT_MESSAGE_ROUTING_KEY = "chat.message";
 
     /**
-     * 好友请求交换机（Topic 类型）
-     * 用于处理好友申请、同意、拒绝等操作
+     * 好友申请相关交换机。
+     * 保留多种 routing key，便于后续把好友链路逐步事件化。
      */
     @Bean
     public TopicExchange friendRequestExchange() {
@@ -64,8 +81,7 @@ public class RabbitMQConfig {
     }
 
     /**
-     * 好友操作交换机（Topic 类型）
-     * 用于处理好友删除、拉黑等操作
+     * 好友删除、拉黑等关系操作交换机。
      */
     @Bean
     public TopicExchange friendOperationExchange() {
@@ -73,19 +89,38 @@ public class RabbitMQConfig {
     }
 
     /**
-     * 系统通知交换机（Fanout 类型）
-     * 用于广播系统通知
+     * 系统通知交换机。
+     * 这里只需要广播到统一通知队列，因此采用 fanout。
      */
     @Bean
     public FanoutExchange systemNotificationExchange() {
         return new FanoutExchange(SYSTEM_NOTIFICATION_EXCHANGE, true, false);
     }
 
-    // ==================== 队列定义 ====================
+    /**
+     * 邮件交换机。
+     */
+    @Bean
+    public DirectExchange emailExchange() {
+        return new DirectExchange(EMAIL_EXCHANGE, true, false);
+    }
 
     /**
-     * 好友申请队列
-     * 用于处理好友申请消息
+     * 登录日志交换机。
+     */
+    @Bean
+    public DirectExchange loginLogExchange() {
+        return new DirectExchange(LOGIN_LOG_EXCHANGE, true, false);
+    }
+
+    @Bean
+    public DirectExchange chatMessageExchange() {
+        return new DirectExchange(CHAT_MESSAGE_EXCHANGE, true, false);
+    }
+
+    /**
+     * 好友申请队列。
+     * durable=true 代表 RabbitMQ 重启后队列仍会保留。
      */
     @Bean
     public Queue friendRequestQueue() {
@@ -93,8 +128,7 @@ public class RabbitMQConfig {
     }
 
     /**
-     * 好友同意队列
-     * 用于处理好友同意消息
+     * 好友申请通过队列。
      */
     @Bean
     public Queue friendAgreeQueue() {
@@ -102,8 +136,7 @@ public class RabbitMQConfig {
     }
 
     /**
-     * 好友拒绝队列
-     * 用于处理好友拒绝消息
+     * 好友申请拒绝队列。
      */
     @Bean
     public Queue friendRejectQueue() {
@@ -111,8 +144,7 @@ public class RabbitMQConfig {
     }
 
     /**
-     * 好友删除队列
-     * 用于处理好友删除消息
+     * 删除好友队列。
      */
     @Bean
     public Queue friendDeleteQueue() {
@@ -120,8 +152,7 @@ public class RabbitMQConfig {
     }
 
     /**
-     * 拉黑用户队列
-     * 用于处理拉黑用户消息
+     * 黑名单操作队列。
      */
     @Bean
     public Queue blacklistQueue() {
@@ -129,18 +160,36 @@ public class RabbitMQConfig {
     }
 
     /**
-     * 系统通知队列
-     * 用于处理系统通知消息
+     * 系统通知队列。
      */
     @Bean
     public Queue systemNotificationQueue() {
         return new Queue(SYSTEM_NOTIFICATION_QUEUE, true, false, false);
     }
 
-    // ==================== 绑定关系定义 ====================
+    /**
+     * 邮件发送队列。
+     */
+    @Bean
+    public Queue emailQueue() {
+        return new Queue(EMAIL_QUEUE, true, false, false);
+    }
 
     /**
-     * 好友申请队列绑定到好友请求交换机
+     * 登录日志队列。
+     */
+    @Bean
+    public Queue loginLogQueue() {
+        return new Queue(LOGIN_LOG_QUEUE, true, false, false);
+    }
+
+    @Bean
+    public Queue chatMessageQueue() {
+        return new Queue(CHAT_MESSAGE_QUEUE, true, false, false);
+    }
+
+    /**
+     * 绑定好友申请队列到好友申请交换机。
      */
     @Bean
     public Binding friendRequestBinding() {
@@ -150,7 +199,7 @@ public class RabbitMQConfig {
     }
 
     /**
-     * 好友同意队列绑定到好友请求交换机
+     * 绑定好友通过队列。
      */
     @Bean
     public Binding friendAgreeBinding() {
@@ -160,7 +209,7 @@ public class RabbitMQConfig {
     }
 
     /**
-     * 好友拒绝队列绑定到好友请求交换机
+     * 绑定好友拒绝队列。
      */
     @Bean
     public Binding friendRejectBinding() {
@@ -170,7 +219,7 @@ public class RabbitMQConfig {
     }
 
     /**
-     * 好友删除队列绑定到好友操作交换机
+     * 绑定删除好友队列。
      */
     @Bean
     public Binding friendDeleteBinding() {
@@ -180,7 +229,7 @@ public class RabbitMQConfig {
     }
 
     /**
-     * 拉黑用户队列绑定到好友操作交换机
+     * 绑定黑名单队列。
      */
     @Bean
     public Binding blacklistBinding() {
@@ -190,7 +239,8 @@ public class RabbitMQConfig {
     }
 
     /**
-     * 系统通知队列绑定到系统通知交换机
+     * 绑定系统通知队列。
+     * fanout 模式下不依赖路由键，发送到交换机的消息会广播到所有绑定队列。
      */
     @Bean
     public Binding systemNotificationBinding() {
@@ -198,12 +248,36 @@ public class RabbitMQConfig {
                 .to(systemNotificationExchange());
     }
 
-    // ==================== 消息转换器 ====================
+    /**
+     * 绑定邮件队列。
+     */
+    @Bean
+    public Binding emailBinding() {
+        return BindingBuilder.bind(emailQueue())
+                .to(emailExchange())
+                .with(EMAIL_ROUTING_KEY);
+    }
 
     /**
-     * 消息转换器（JSON 格式）
-     * Spring Boot 4.0+ 推荐使用 SimpleMessageConverter
-     * 配合 ObjectMapper 实现 JSON 序列化/反序列化
+     * 绑定登录日志队列。
+     */
+    @Bean
+    public Binding loginLogBinding() {
+        return BindingBuilder.bind(loginLogQueue())
+                .to(loginLogExchange())
+                .with(LOGIN_LOG_ROUTING_KEY);
+    }
+
+    @Bean
+    public Binding chatMessageBinding() {
+        return BindingBuilder.bind(chatMessageQueue())
+                .to(chatMessageExchange())
+                .with(CHAT_MESSAGE_ROUTING_KEY);
+    }
+
+    /**
+     * RabbitMQ 消息转换器。
+     * 这里创建消息 ID，便于排查重复投递、路由失败等问题。
      */
     @Bean
     public MessageConverter messageConverter() {
@@ -213,35 +287,43 @@ public class RabbitMQConfig {
     }
 
     /**
-     * ObjectMapper Bean
-     * 用于 JSON 序列化/反序列化
+     * JSON 序列化工具。
+     * 供生产者和消费者统一序列化/反序列化消息体。
      */
     @Bean
     public ObjectMapper objectMapper() {
-        return new ObjectMapper();
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        return objectMapper;
     }
 
     /**
-     * RabbitTemplate 配置
-     * 用于发送消息
+     * RabbitTemplate 配置。
+     * 统一打开 mandatory、发布确认和 returned 回调，帮助感知消息是否真正进入队列。
+     *
+     * @param connectionFactory RabbitMQ 连接工厂
+     * @return 配置完成的 RabbitTemplate
      */
     @Bean
     public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
+        // 1. 创建 RabbitTemplate，并注入底层连接工厂。
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
-        // 设置消息转换器
+        // 2. 统一使用当前项目的消息转换器。
         rabbitTemplate.setMessageConverter(messageConverter());
-        // 启用发布者确认
+        // 3. mandatory=true 时，消息到达交换机但路由不到队列会触发 returned callback。
+        rabbitTemplate.setMandatory(true);
+        // 4. 发布确认用于感知消息是否成功到达交换机。
         rabbitTemplate.setConfirmCallback((correlationData, ack, cause) -> {
             if (ack) {
-                System.out.println("消息发送成功，correlationData: " + correlationData);
+                System.out.println("RabbitMQ message published successfully");
             } else {
-                System.out.println("消息发送失败，cause: " + cause);
+                System.out.println("RabbitMQ message publish failed: " + cause);
             }
         });
-        // 启用发布者返回
-        rabbitTemplate.setReturnsCallback(returned -> {
-            System.out.println("消息被返回，message: " + returned.getMessage());
-        });
+        // 5. returned callback 用于感知消息到达交换机后是否成功路由到队列。
+        rabbitTemplate.setReturnsCallback(returned ->
+                System.out.println("RabbitMQ message returned: " + returned.getMessage()));
         return rabbitTemplate;
     }
 }

@@ -19,4 +19,10 @@ public class TeamUpdateDTO {
     private String teamTags;
     /** 最大成员数 */
     private Integer maxMember;
+    /** 团队类型：1-公开，2-私有 */
+    private Integer teamType;
+    /** 加入规则：1-申请审批，2-仅邀请，3-密码加入 */
+    private Integer joinRule;
+    /** 加入密码，仅 joinRule=3 时需要 */
+    private String joinPassword;
 }

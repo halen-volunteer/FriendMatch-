@@ -17,6 +17,7 @@ public class AdminAuditServiceImpl implements AdminAuditService {
     public void log(String actionType, String actionTarget, String actionDetail) {
         Long userId = UserHolder.getUserId();
         if (userId == null) return;
+        // 审计日志只记录当前真实操作人，系统自动任务不会伪造管理员身份写入这里。
         AdminAuditLog log = new AdminAuditLog();
         log.setAdminUserId(userId);
         log.setActionType(actionType);

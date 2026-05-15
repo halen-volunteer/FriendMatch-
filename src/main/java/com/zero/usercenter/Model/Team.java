@@ -11,33 +11,33 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * 团队基础信息表
- * @TableName t_team
+ * 团队实体。
+ * 对应表 `t_team`，承载团队资料、加入规则和全员禁言状态。
  */
 @TableName(value = "t_team")
 @Data
 public class Team {
 
-    /** 团队主键ID */
+    /** 团队主键 ID。 */
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    /** 团队名称（1-64字符） */
+    /** 团队名称。 */
     private String teamName;
 
-    /** 团队头像URL */
+    /** 团队头像 URL。 */
     private String teamAvatar;
 
-    /** 团队简介（0-512字符） */
+    /** 团队简介。 */
     private String teamIntro;
 
-    /** 团队标签（逗号分隔，最多5个） */
+    /** 团队标签，当前以逗号分隔字符串存储。 */
     private String teamTags;
 
-    /** 团队创建人ID */
+    /** 团队创建人 ID。 */
     private Long creatorId;
 
-    /** 团队最大成员数（默认200） */
+    /** 团队最大成员数。 */
     private Integer maxMember;
 
     /**
@@ -55,20 +55,23 @@ public class Team {
      */
     private Integer joinRule;
 
-    /** 加入密码（仅 join_rule=3 有效，BCrypt加密） */
+    /** 加入密码，仅密码入队时生效。 */
     private String joinPassword;
 
-    /** 团队全员禁言：0-正常，1-禁言（队长/管理员除外） */
+    /** 团队全员禁言状态。 */
     private Integer teamAllMute;
 
-    /** 是否软删除：0-否，1-是 */
+    /** 团队全员禁言解除时间。 */
+    private LocalDateTime teamAllMuteUnpunishTime;
+
+    /** 是否软删除。 */
     private Integer isDelete;
 
-    /** 创建时间 */
+    /** 创建时间。 */
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
-    /** 更新时间 */
+    /** 更新时间。 */
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 }

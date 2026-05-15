@@ -8,7 +8,7 @@ public interface SearchRecommendRefreshService {
     /**
      * 刷新指定用户推荐结果。
      *
-     * @param userId 用户ID
+     * @param userId 需要刷新推荐结果的用户 ID
      */
     void refreshRecommendForUser(Long userId);
 

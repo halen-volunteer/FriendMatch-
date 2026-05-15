@@ -10,20 +10,21 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * 团队成员关系实体，对应表 `t_team_member`。
+ * 团队成员关系实体。
+ * 对应表 `t_team_member`，用于承载角色、禁言和入退队状态。
  */
 @TableName(value = "t_team_member")
 @Data
 public class TeamMember {
 
-    /** 主键ID */
+    /** 主键 ID。 */
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    /** 团队ID */
+    /** 团队 ID。 */
     private Long teamId;
 
-    /** 用户ID */
+    /** 用户 ID。 */
     private Long userId;
 
     /** 角色类型（1-队长，2-管理员，3-普通成员） */
@@ -35,7 +36,7 @@ public class TeamMember {
     /** 加入来源（1-直接加入，2-邀请加入，3-申请审批） */
     private Integer joinSource;
 
-    /** 邀请人用户ID */
+    /** 邀请人用户 ID。 */
     private Long inviteUserId;
 
     /** 团队内禁言解除时间 */

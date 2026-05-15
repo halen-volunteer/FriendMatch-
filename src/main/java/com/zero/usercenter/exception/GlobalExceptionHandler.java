@@ -6,14 +6,16 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 /**
- * 全局异常处理器
+ * 全局异常处理器。
+ * 统一把业务异常和系统异常转换成前端可识别的 Result 结构。
  */
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
     
     /**
-     * 处理业务异常
+     * 处理业务异常。
+     * 这类异常通常由显式校验失败触发，按 warn 级别记录即可。
      */
     @ExceptionHandler(BusinessException.class)
     public Result handleBusinessException(BusinessException e) {
@@ -22,7 +24,8 @@ public class GlobalExceptionHandler {
     }
     
     /**
-     * 处理其他异常
+     * 处理未预期异常。
+     * 对外统一返回兜底文案，避免把堆栈细节暴露给前端。
      */
     @ExceptionHandler(Exception.class)
     public Result handleException(Exception e) {

@@ -3,7 +3,8 @@ package com.zero.usercenter.Enums;
 import lombok.Getter;
 
 /**
- * 邮件模板枚举
+ * 邮件模板枚举。
+ * 统一维护邮件主题和正文模板，避免业务代码散落拼接 HTML。
  */
 @Getter
 public enum EmailTemplateEnum {
@@ -36,7 +37,7 @@ public enum EmailTemplateEnum {
     }
     
     /**
-     * 替换模板中的占位符
+     * 用业务参数替换模板占位符。
      */
     public String set(String code) {
         return template.replace("{code}", code);

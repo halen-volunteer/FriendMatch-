@@ -9,6 +9,10 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/**
+ * 管理员审计日志实体。
+ * 用于记录处罚、撤销处罚、工单处理等后台敏感操作，方便追溯谁在什么时间做了什么事。
+ */
 @Data
 @TableName("t_admin_audit_log")
 public class AdminAuditLog {

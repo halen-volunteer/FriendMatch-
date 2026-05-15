@@ -10,8 +10,8 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * 用户好友关系表
- * @TableName t_user_friend
+ * 用户好友关系实体。
+ * 对应表 `t_user_friend`，用于记录申请态、好友态和拉黑态的关系快照。
  */
 @TableName(value = "t_user_friend")
 @Data
@@ -34,7 +34,7 @@ public class UserFriend {
     private Long friendId;
 
     /**
-     * 对好友的备注名
+     * 对好友的备注名。
      */
     private String friendRemark;
 

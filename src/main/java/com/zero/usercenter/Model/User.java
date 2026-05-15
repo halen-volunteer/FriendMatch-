@@ -10,8 +10,8 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * 用户基础信息表
- * @TableName t_user
+ * 用户实体。
+ * 对应表 `t_user`，统一承载账号、资料、隐私和全局处罚状态。
  */
 @TableName(value = "t_user")
 @Data
@@ -54,7 +54,8 @@ public class User {
     private String userPassword;
 
     /**
-     * 用户标签（逗号分隔）
+     * 用户标签。
+     * 当前以逗号分隔字符串存储。
      */
     private String userTags;
 

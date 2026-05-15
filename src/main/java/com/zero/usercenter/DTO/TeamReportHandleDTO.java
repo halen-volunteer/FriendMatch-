@@ -3,18 +3,22 @@ package com.zero.usercenter.DTO;
 import lombok.Data;
 
 /**
- * 团队举报处理 DTO（管理员）。
+ * 管理员处理团队举报 DTO。
  */
 @Data
 public class TeamReportHandleDTO {
 
-    /** 举报记录ID。 */
+    /** 举报主单 ID。 */
     private Long reportId;
 
-    /** 处理状态（1-通过处理，2-驳回，3-忽略；以业务字典为准）。 */
+    /**
+     * 首审处理决定：
+     * 1-确认违规
+     * 2-确认未违规
+     */
     private Integer reportStatus;
 
-    /** 管理员处理动作编码。 */
+    /** 预留的处理动作字段，当前首审阶段不依赖该值。 */
     private Integer adminAction;
 
     /** 管理员处理备注。 */

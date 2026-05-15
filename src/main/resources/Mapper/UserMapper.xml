@@ -3,6 +3,6 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.zero.usercenter.Mapper.UserMapper">
-    <!-- 依赖 MyBatis-Plus 自动驼峰转下划线映射，无需手写 ResultMap -->
-    <!-- 如需自定义 SQL，在此处补充，列名使用 t_user.user_xxx 下划线风格 -->
+    <!-- 当前依赖 MyBatis-Plus 自动映射，暂未维护自定义 SQL。 -->
+    <!-- 如后续补充复杂查询，这里统一使用 t_user 的下划线字段名。 -->
 </mapper>

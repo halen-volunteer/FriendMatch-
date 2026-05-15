@@ -1,15 +1,15 @@
 package com.zero.usercenter.Service;
 
 /**
- * AI 内容审核服务接口
+ * AI 文本审核服务接口。
  */
 public interface AiCheckService {
 
     /**
-     * 检测文本内容是否违规
+     * 审核文本内容是否违规。
      *
-     * @param content 待检测文本内容
-     * @return 检测结果：0-正常，1-违规，-1-检测失败（默认放行）
+     * @param content 待审核的文本内容
+     * @return 0 表示正常，1 表示违规，-1 表示调用失败或无法确定
      */
     int checkContent(String content);
 }
